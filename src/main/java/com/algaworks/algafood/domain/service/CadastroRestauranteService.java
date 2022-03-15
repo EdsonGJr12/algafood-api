@@ -2,6 +2,7 @@ package com.algaworks.algafood.domain.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import com.algaworks.algafood.domain.exception.RestauranteNaoEncontradoException;
 import com.algaworks.algafood.domain.model.Cozinha;
@@ -11,14 +12,13 @@ import com.algaworks.algafood.domain.repository.RestauranteRepository;
 @Service
 public class CadastroRestauranteService {
 	
-	private static final String MSG_ENTIDADE_NAO_ENCONTRADA = "Não existe cadastro de restaurante com código %d";
-
 	@Autowired
 	private RestauranteRepository restauranteRepository;
 	
 	@Autowired
 	private CadastroCozinhaService cadastroCozinhaService;
 
+	@Transactional
 	public Restaurante salvar(Restaurante restaurante) {
 		Cozinha cozinha = cadastroCozinhaService.buscarOuFalhar(restaurante.getCozinha().getId());
 		restaurante.setCozinha(cozinha);
@@ -27,8 +27,7 @@ public class CadastroRestauranteService {
 
 	public Restaurante buscarOufalhar(Long restauranteId) {
 		return restauranteRepository.findById(restauranteId)
-				.orElseThrow(() -> new RestauranteNaoEncontradoException(
-						String.format(MSG_ENTIDADE_NAO_ENCONTRADA, restauranteId)));
+				.orElseThrow(() -> new RestauranteNaoEncontradoException(restauranteId));
 	}
 
 }
