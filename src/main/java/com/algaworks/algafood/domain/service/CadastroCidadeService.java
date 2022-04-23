@@ -34,6 +34,7 @@ public class CadastroCidadeService {
 		try {
 			Cidade cidade = buscarOuFalhar(cidadeId);
 			cidadeRepository.deleteById(cidade.getId());
+			cidadeRepository.flush();
 		} catch (DataIntegrityViolationException e) {
 			throw new EntidadeEmUsoException(
 					String.format(MSG_ENTIDADE_EM_USO, cidadeId));

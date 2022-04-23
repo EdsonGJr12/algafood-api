@@ -28,6 +28,7 @@ public class CadastroEstadoService {
 		try {
 			Estado estado = buscarOuFalhar(estadoId);
 			estadoRepository.deleteById(estado.getId());
+			estadoRepository.flush();
 		} catch (DataIntegrityViolationException e) {
 			throw new EntidadeEmUsoException(
 					String.format(MSG_ENTIDADE_EM_USO, estadoId));
