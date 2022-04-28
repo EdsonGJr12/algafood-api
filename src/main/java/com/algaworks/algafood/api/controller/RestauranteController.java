@@ -14,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpInputMessage;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.http.converter.json.MappingJacksonValue;
 import org.springframework.http.server.ServletServerHttpRequest;
 import org.springframework.util.ReflectionUtils;
 import org.springframework.validation.BeanPropertyBindingResult;
@@ -36,6 +37,7 @@ import com.algaworks.algafood.api.model.ProdutoModel;
 import com.algaworks.algafood.api.model.RestauranteModel;
 import com.algaworks.algafood.api.model.input.ProdutoInput;
 import com.algaworks.algafood.api.model.input.RestauranteInput;
+import com.algaworks.algafood.api.model.view.RestauranteView;
 import com.algaworks.algafood.domain.exception.CidadeNaoEncontradaException;
 import com.algaworks.algafood.domain.exception.CozinhaNaoEncontradaException;
 import com.algaworks.algafood.domain.exception.EntidadeNaoEncontradaException;
@@ -45,6 +47,7 @@ import com.algaworks.algafood.domain.model.Cidade;
 import com.algaworks.algafood.domain.model.Cozinha;
 import com.algaworks.algafood.domain.model.Produto;
 import com.algaworks.algafood.domain.model.Restaurante;
+import com.algaworks.algafood.domain.repository.ProdutoRepository;
 import com.algaworks.algafood.domain.repository.RestauranteRepository;
 import com.algaworks.algafood.domain.service.CadastroRestauranteService;
 import com.algaworks.algafood.validation.ValidacaoException;
@@ -57,6 +60,9 @@ public class RestauranteController {
 
 	@Autowired
 	private RestauranteRepository restauranteRepository;
+	
+	@Autowired
+	private ProdutoRepository produtoRepository;
 
 	@Autowired
 	private CadastroRestauranteService cadastroRestauranteService;
@@ -66,13 +72,44 @@ public class RestauranteController {
 
 	@Autowired
 	private ModelMapper modelMapper;
-
+	
 	@GetMapping
-	public List<RestauranteModel> listar() {
+	public MappingJacksonValue listar(@RequestParam(required = false) String projecao) {
 		List<Restaurante> restaurantes = restauranteRepository.findAll();
-		return restaurantes.stream().map(restaurante -> modelMapper.map(restaurante, RestauranteModel.class))
+		List<RestauranteModel> restaurantesModel = restaurantes.stream().map(restaurante -> modelMapper.map(restaurante, RestauranteModel.class))
 				.collect(Collectors.toList());
+		
+		MappingJacksonValue wrapper = new MappingJacksonValue(restaurantesModel);
+		
+		wrapper.setSerializationView(RestauranteView.Resumo.class);
+		
+		if ("apenas-nome".equals(projecao)) {
+			wrapper.setSerializationView(RestauranteView.ApenasNome.class);
+		} else if ("completo".equals(projecao)) {
+			wrapper.setSerializationView(null);
+		} 
+		
+		return wrapper;
 	}
+
+//	@GetMapping
+//	public List<RestauranteModel> listar() {
+//		List<Restaurante> restaurantes = restauranteRepository.findAll();
+//		return restaurantes.stream().map(restaurante -> modelMapper.map(restaurante, RestauranteModel.class))
+//				.collect(Collectors.toList());
+//	}
+//	
+//	@JsonView(RestauranteView.Resumo.class)
+//	@GetMapping(params = "projecao=resumo")
+//	public List<RestauranteModel> listarResumido() {
+//		return listar();
+//	}
+//	
+//	@JsonView(RestauranteView.ApenasNome.class)
+//	@GetMapping(params = "projecao=apenas-nome")
+//	public List<RestauranteModel> listarResumido2() {
+//		return listar();
+//	}
 
 	@GetMapping("/teste")
 	public List<Restaurante> buscaDinamicaCriteria(@RequestParam(required = false) String nome,
@@ -204,14 +241,26 @@ public class RestauranteController {
 	}
 
 	@GetMapping("/{restauranteId}/produtos")
-	public List<ProdutoModel> pesquisarProdutos(@PathVariable Long restauranteId) {
+	public List<ProdutoModel> pesquisarProdutos(@PathVariable Long restauranteId, 
+			@RequestParam(required = false) boolean incluirInativos) {
 		Restaurante restaurante = cadastroRestauranteService.buscarOuFalhar(restauranteId);
-		return restaurante.getProdutos().stream().map(produto -> modelMapper.map(produto, ProdutoModel.class))
+		
+		List<Produto> produtos = null;
+		
+		if (incluirInativos) {
+			produtos = produtoRepository.findByRestaurante(restaurante);
+		} else {
+			produtos = produtoRepository.findAtivosByRestaurante(restaurante);
+		}
+		
+		return produtos.stream()
+				.map(produto -> modelMapper.map(produto, ProdutoModel.class))
 				.collect(Collectors.toList());
 	}
 
 	@GetMapping("/{restauranteId}/produtos/{produtoId}")
-	public ProdutoModel buscarProduto(@PathVariable Long restauranteId, @PathVariable Long produtoId) {
+	public ProdutoModel buscarProduto(@PathVariable Long restauranteId, 
+			@PathVariable Long produtoId) {
 		Produto produto = cadastroRestauranteService.buscarProdutoOuFalhar(restauranteId, produtoId);
 		return modelMapper.map(produto, ProdutoModel.class);
 	}

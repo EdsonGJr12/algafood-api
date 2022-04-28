@@ -24,7 +24,9 @@ import com.algaworks.algafood.domain.exception.NegocioException;
 import com.algaworks.algafood.domain.model.Pedido;
 import com.algaworks.algafood.domain.model.Usuario;
 import com.algaworks.algafood.domain.repository.PedidoRepository;
+import com.algaworks.algafood.domain.repository.filter.PedidoFilter;
 import com.algaworks.algafood.domain.service.EmissaoPedidoService;
+import com.algaworks.algafood.infrastucture.repository.spec.PedidoSpecs;
 
 @RestController
 @RequestMapping(value = "/pedidos")
@@ -39,17 +41,37 @@ public class PedidoController {
     @Autowired
     private ModelMapper modelMapper;
     
+//    @GetMapping
+//    public MappingJacksonValue listar(@RequestParam(required = false) Set<String> campos) {
+//        List<Pedido> pedidos = pedidoRepository.findAll();
+//        List<PedidoResumoModel> pedidosModel = pedidos.stream()
+//        		.map(pedido -> modelMapper.map(pedido, PedidoResumoModel.class))
+//        		.collect(Collectors.toList());
+//        
+//        MappingJacksonValue wrapper = new MappingJacksonValue(pedidosModel);
+//        SimpleFilterProvider filterProvider = new SimpleFilterProvider();
+//        filterProvider.addFilter("pedidoFilter", SimpleBeanPropertyFilter.serializeAll());
+//        
+//        if (campos != null) {
+//        	filterProvider.addFilter("pedidoFilter", SimpleBeanPropertyFilter.filterOutAllExcept(campos));
+//        }
+//        
+//        wrapper.setFilters(filterProvider);
+//        
+//        return wrapper;
+//    }
+    
     @GetMapping
-    public List<PedidoResumoModel> listar() {
-        List<Pedido> todosPedidos = pedidoRepository.findAll();
+    public List<PedidoResumoModel> pesquisar(PedidoFilter filtro) {
+        List<Pedido> todosPedidos = pedidoRepository.findAll(PedidoSpecs.usandoFiltro(filtro));
         return todosPedidos.stream()
         		.map(pedido -> modelMapper.map(pedido, PedidoResumoModel.class))
         		.collect(Collectors.toList());
     }
     
     @GetMapping("/{pedidoId}")
-    public PedidoModel buscar(@PathVariable Long pedidoId) {
-        Pedido pedido = emissaoPedido.buscarOuFalhar(pedidoId);
+    public PedidoModel buscar(@PathVariable String pedidoCodigo) {
+        Pedido pedido = emissaoPedido.buscarOuFalhar(pedidoCodigo);
         return modelMapper.map(pedido, PedidoModel.class);
     }  
     

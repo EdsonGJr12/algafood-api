@@ -4,6 +4,7 @@ import java.math.BigDecimal;
 import java.time.OffsetDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Embedded;
@@ -17,8 +18,11 @@ import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
+import javax.persistence.PrePersist;
 
 import org.hibernate.annotations.CreationTimestamp;
+
+import com.algaworks.algafood.domain.exception.NegocioException;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
@@ -32,6 +36,8 @@ public class Pedido {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	@EqualsAndHashCode.Include
 	private Long id;
+	
+	private String codigo;
 	
 	private BigDecimal subtotal;
 	private BigDecimal taxaFrete;
@@ -62,6 +68,11 @@ public class Pedido {
 	
 	@Enumerated(EnumType.STRING)
 	private StatusPedido status = StatusPedido.CRIADO;
+	
+	@PrePersist
+	private void gerarPedido() {
+		this.codigo = UUID.randomUUID().toString();
+	}
 
 	
 	public void calcularValorTotal() {
@@ -83,4 +94,33 @@ public class Pedido {
 	    this.itens.forEach(item -> item.setPedido(this));
 	}
 	
+	public void confirmar() {
+		if (!this.status.equals(StatusPedido.CRIADO)) {
+			throw new NegocioException(
+					String.format("Status do pedido %d não pode ser alterado de %s para %s", 
+							this.codigo, this.status, StatusPedido.CONFIRMADO));
+		}
+		this.status = StatusPedido.CONFIRMADO;
+		this.dataConfirmacao = OffsetDateTime.now();
+	}
+	
+	public void entregar() {
+		if (!this.status.equals(StatusPedido.CONFIRMADO)) {
+			throw new NegocioException(
+					String.format("Status do pedido %d não pode ser confirmado pois o pedido deve estar %s ", 
+							this.codigo, StatusPedido.CONFIRMADO));
+		}
+		this.status = StatusPedido.ENTREGUE;
+		this.dataEntrega = OffsetDateTime.now();
+	}
+	
+	public void cancelar() {
+		if (!this.status.equals(StatusPedido.CRIADO)) {
+			throw new NegocioException(
+					String.format("Status do pedido %d não pode ser cancelado pois deve estar %s", 
+							this.codigo, StatusPedido.CRIADO));
+		}
+		this.status = StatusPedido.CANCELADO;
+		this.dataCancelamento = OffsetDateTime.now();
+	}
 }
