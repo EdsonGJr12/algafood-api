@@ -24,10 +24,12 @@ import org.hibernate.annotations.CreationTimestamp;
 
 import com.algaworks.algafood.domain.exception.NegocioException;
 
-import lombok.Data;
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
 @EqualsAndHashCode(onlyExplicitlyIncluded = true)
 @Entity
 public class Pedido {

@@ -7,6 +7,9 @@ import javax.validation.Valid;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,6 +30,8 @@ import com.algaworks.algafood.domain.service.CadastroCozinhaService;
 @RestController
 @RequestMapping("/cozinhas")
 public class CozinhaController {
+	
+//	private static final Logger logger = LoggerFactory.getLogger(CozinhaController.class);
 
 	@Autowired
 	private CozinhaRepository cozinhaRepository;
@@ -38,10 +43,14 @@ public class CozinhaController {
 	private ModelMapper modelMapper;
 
 	@GetMapping
-	public List<CozinhaModel> listar() {
-		return cozinhaRepository.findAll().stream()
+	public Page<CozinhaModel> listar(Pageable pageable) {
+		Page<Cozinha> page = cozinhaRepository.findAll(pageable);
+		List<CozinhaModel> cozinhas = page.getContent().stream()
 				.map(cozinha -> modelMapper.map(cozinha, CozinhaModel.class))
 				.collect(Collectors.toList());
+		
+		return new PageImpl<>(cozinhas, pageable, cozinhas.size());
+		
 	}
 
 	@GetMapping("/{cozinhaId}")
