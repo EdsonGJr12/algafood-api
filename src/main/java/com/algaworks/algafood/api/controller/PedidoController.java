@@ -1,6 +1,7 @@
 package com.algaworks.algafood.api.controller;
 
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
@@ -22,6 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.algaworks.algafood.api.model.PedidoModel;
 import com.algaworks.algafood.api.model.PedidoResumoModel;
 import com.algaworks.algafood.api.model.input.PedidoInput;
+import com.algaworks.algafood.core.data.PageableTranslator;
 import com.algaworks.algafood.domain.exception.EntidadeNaoEncontradaException;
 import com.algaworks.algafood.domain.exception.NegocioException;
 import com.algaworks.algafood.domain.model.Pedido;
@@ -66,6 +68,9 @@ public class PedidoController {
     
     @GetMapping
     public Page<PedidoResumoModel> pesquisar(PedidoFilter filtro, Pageable pageable) {
+    	
+    	pageable = traduzirPageable(pageable);
+    	
         Page<Pedido> page = pedidoRepository.findAll(PedidoSpecs.usandoFiltro(filtro), pageable);
         
         List<PedidoResumoModel> pedidos = page.getContent().stream()
@@ -97,5 +102,17 @@ public class PedidoController {
         } catch (EntidadeNaoEncontradaException e) {
             throw new NegocioException(e.getMessage(), e);
         }
+    }
+    
+    private Pageable traduzirPageable(Pageable apiPageable) {
+    	var mapeamento = Map.of(
+    			"codigo", "codigo",
+    			"nomeCliente", "cliente.nome",
+    			"restaurante.nome", "restaurante.nome",
+    			"valorTotal", "valorTotal"
+    	);
+    	
+    	return PageableTranslator.translate(apiPageable, mapeamento);
+    	 
     }
 } 
