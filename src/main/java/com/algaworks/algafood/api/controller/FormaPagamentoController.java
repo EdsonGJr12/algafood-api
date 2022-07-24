@@ -1,13 +1,17 @@
 package com.algaworks.algafood.api.controller;
 
+import java.time.OffsetDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import javax.validation.Valid;
 
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.CacheControl;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,6 +21,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.context.request.ServletWebRequest;
+import org.springframework.web.filter.ShallowEtagHeaderFilter;
 
 import com.algaworks.algafood.api.model.FormaPagamentoModel;
 import com.algaworks.algafood.api.model.input.FormaPagamentoInput;
@@ -38,17 +44,43 @@ public class FormaPagamentoController {
     private ModelMapper modelMapper;
     
     @GetMapping
-    public List<FormaPagamentoModel> listar() {
-        return formaPagamentoRepository.findAll().stream()
+    public ResponseEntity<List<FormaPagamentoModel>> listar(ServletWebRequest request) {
+    	// Desabilita shallow E-tag para essa requisiçao
+    	ShallowEtagHeaderFilter.disableContentCaching(request.getRequest());
+    	
+    	String eTag = "0";
+    	
+    	OffsetDateTime dataUltimaAtualizacao = formaPagamentoRepository.buscarUlimaAtualizacao();
+    	if (dataUltimaAtualizacao != null) {
+    		eTag = String.valueOf(dataUltimaAtualizacao.toEpochSecond());
+    	}
+    	
+    	//Ponto para verificar se continua ou não o processamento
+    	boolean isNotModified = request.checkNotModified(eTag);
+    	if (isNotModified) {
+    		return null;
+    	}
+    	
+        List<FormaPagamentoModel> formasPagamento = formaPagamentoRepository.findAll().stream()
         		.map(formaPagamento -> modelMapper.map(formaPagamento, FormaPagamentoModel.class))
         		.collect(Collectors.toList());
-        
+		
+        return ResponseEntity.ok()
+				.cacheControl(CacheControl.maxAge(10, TimeUnit.SECONDS))
+				.eTag(eTag)
+				.body(formasPagamento);
     }
     
     @GetMapping("/{formaPagamentoId}")
-    public FormaPagamentoModel buscar(@PathVariable Long formaPagamentoId) {
+    public ResponseEntity<FormaPagamentoModel> buscar(@PathVariable Long formaPagamentoId) {
         FormaPagamento formaPagamento = cadastroFormaPagamento.buscarOuFalhar(formaPagamentoId);
-        return modelMapper.map(formaPagamento, FormaPagamentoModel.class);
+        FormaPagamentoModel formaPagamentoModel = modelMapper.map(formaPagamento, FormaPagamentoModel.class);
+		return ResponseEntity.ok()
+//				.cacheControl(CacheControl.maxAge(10, TimeUnit.SECONDS).cachePrivate())
+//				.cacheControl(CacheControl.maxAge(10, TimeUnit.SECONDS).cachePublic())
+//				.cacheControl(CacheControl.noCache())
+				.cacheControl(CacheControl.noStore())
+				.body(formaPagamentoModel);
     }
     
     @PostMapping
