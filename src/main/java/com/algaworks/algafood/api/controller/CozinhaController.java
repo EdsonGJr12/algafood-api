@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -21,6 +22,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.algaworks.algafood.api.controller.openapi.CozinhaControllerOpenApi;
 import com.algaworks.algafood.api.model.CozinhaModel;
 import com.algaworks.algafood.api.model.input.CozinhaInput;
 import com.algaworks.algafood.domain.model.Cozinha;
@@ -28,8 +30,8 @@ import com.algaworks.algafood.domain.repository.CozinhaRepository;
 import com.algaworks.algafood.domain.service.CadastroCozinhaService;
 
 @RestController
-@RequestMapping("/cozinhas")
-public class CozinhaController {
+@RequestMapping(value = "/cozinhas", produces = MediaType.APPLICATION_JSON_VALUE)
+public class CozinhaController implements CozinhaControllerOpenApi {
 	
 //	private static final Logger logger = LoggerFactory.getLogger(CozinhaController.class);
 
@@ -50,7 +52,6 @@ public class CozinhaController {
 				.collect(Collectors.toList());
 		
 		return new PageImpl<>(cozinhas, pageable, cozinhas.size());
-		
 	}
 
 	@GetMapping("/{cozinhaId}")

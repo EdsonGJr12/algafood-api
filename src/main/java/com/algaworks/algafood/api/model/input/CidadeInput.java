@@ -1,3 +1,4 @@
+
 package com.algaworks.algafood.api.model.input;
 
 import javax.validation.Valid;

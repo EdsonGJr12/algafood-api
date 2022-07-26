@@ -8,6 +8,7 @@ import javax.validation.Valid;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.algaworks.algafood.api.controller.openapi.GrupoControllerOpenApi;
 import com.algaworks.algafood.api.model.GrupoModel;
 import com.algaworks.algafood.api.model.PermissaoModel;
 import com.algaworks.algafood.api.model.input.GrupoInput;
@@ -26,8 +28,8 @@ import com.algaworks.algafood.domain.repository.GrupoRepository;
 import com.algaworks.algafood.domain.service.CadastroGrupoService;
 
 @RestController
-@RequestMapping("/grupos")
-public class GrupoController {
+@RequestMapping(path = "/grupos", produces = MediaType.APPLICATION_JSON_VALUE)
+public class GrupoController implements GrupoControllerOpenApi {
 
     @Autowired
     private GrupoRepository grupoRepository;
@@ -38,7 +40,7 @@ public class GrupoController {
     @Autowired
     private ModelMapper modelMapper;
     
-    @GetMapping
+	@GetMapping
     public List<GrupoModel> listar() {
         return grupoRepository.findAll().stream()
         		.map(grupo -> modelMapper.map(grupo, GrupoModel.class))
@@ -46,13 +48,13 @@ public class GrupoController {
         
     }
     
-    @GetMapping("/{grupoId}")
+	@GetMapping("/{grupoId}")
     public GrupoModel buscar(@PathVariable Long grupoId) {
         Grupo grupo = cadastroGrupo.buscarOuFalhar(grupoId);
         return modelMapper.map(grupo, GrupoModel.class);
     }
     
-    @PostMapping
+	@PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     public GrupoModel adicionar(@RequestBody @Valid GrupoInput grupoInput) {
         Grupo grupo = modelMapper.map(grupoInput, Grupo.class);
@@ -60,7 +62,7 @@ public class GrupoController {
         return modelMapper.map(grupo, GrupoModel.class);
     }
     
-    @PutMapping("/{grupoId}")
+	@PutMapping("/{grupoId}")
     public GrupoModel atualizar(@PathVariable Long grupoId,
             @RequestBody @Valid GrupoInput grupoInput) {
         Grupo grupoAtual = cadastroGrupo.buscarOuFalhar(grupoId);
@@ -69,13 +71,13 @@ public class GrupoController {
         return modelMapper.map(grupoAtual, GrupoModel.class);
     }
     
-    @DeleteMapping("/{grupoId}")
+	@DeleteMapping("/{grupoId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void remover(@PathVariable Long grupoId) {
         cadastroGrupo.excluir(grupoId);	
     }   
     
-    @GetMapping("/{grupoId}/permissoes")
+	@GetMapping("/{grupoId}/permissoes")
 	public List<PermissaoModel> pesquisarPermissoes(@PathVariable Long grupoId) {
 		Grupo grupo = cadastroGrupo.buscarOuFalhar(grupoId);
 		return grupo.getPermissoes().stream()
